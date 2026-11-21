@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { ClientMessage, PlayerState, ServerMessage } from "./protocol.js";
 
@@ -41,7 +42,15 @@ function parseMessage(value: string): ClientMessage | undefined {
   }
 }
 
-const server = new WebSocketServer({ port });
+const httpServer = createServer((request, response) => {
+  if (request.url === "/health") {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ status: "ok", rooms: rooms.size, tickRate }));
+    return;
+  }
+  response.writeHead(404); response.end();
+});
+const server = new WebSocketServer({ server: httpServer });
 server.on("connection", (socket) => {
   const playerId = randomUUID();
   let roomId: string | undefined;
@@ -141,4 +150,4 @@ setInterval(() => {
   }
 }, 1000 / tickRate);
 
-console.log(`Game service listening on ws://0.0.0.0:${port}`);
+httpServer.listen(port, "0.0.0.0", () => console.log(`Game service listening on ws://0.0.0.0:${port}`));
