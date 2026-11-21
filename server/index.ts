@@ -8,6 +8,7 @@ const tickRate = 20;
 const rooms = new Map<string, Map<string, PlayerState>>();
 const sockets = new Map<string, WebSocket>();
 const lastShot = new Map<string, number>();
+const weaponConfig = { rifle: { damage: 25, cooldown: 250 }, scatter: { damage: 45, cooldown: 650 }, repair: { damage: 15, cooldown: 400 } } as const;
 const roomObjectives = new Map<string, { nodes: { x: number; z: number; done: boolean }[]; phase: "recover" | "extract" | "complete"; extractStarted: number }>();
 const accountFile = process.env.GAME_ACCOUNT_FILE ?? "data/accounts.json";
 mkdirSync(accountFile.split("/").slice(0, -1).join("/") || ".", { recursive: true });
@@ -57,7 +58,7 @@ server.on("connection", (socket) => {
         room.set(`${roomId}-crawler-2`, { id: `${roomId}-crawler-2`, kind: "enemy", name: "维护爬行机", x: -8, y: 1.2, z: -14, yaw: 0, pitch: 0, health: 100 });
       }
       const account = accounts[name] ?? (accounts[name] = { credits: 0 });
-      room.set(playerId, { id: playerId, kind: "player", name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100, credits: account.credits });
+      room.set(playerId, { id: playerId, kind: "player", name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100, credits: account.credits, weapon: "rifle" });
       rooms.set(roomId, room);
       sockets.set(playerId, socket);
       send(socket, { type: "welcome", playerId, roomId, tickRate });
@@ -75,6 +76,7 @@ server.on("connection", (socket) => {
       player.z += (message.moveZ / length) * speed;
       player.yaw = Number.isFinite(message.yaw) ? message.yaw : player.yaw;
       player.pitch = Number.isFinite(message.pitch) ? message.pitch : player.pitch;
+      if (message.weapon === "rifle" || message.weapon === "scatter" || message.weapon === "repair") player.weapon = message.weapon;
       const objective = roomObjectives.get(roomId);
       if (message.interact && objective?.phase === "recover") {
         const node = objective.nodes.find((candidate) => !candidate.done && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
@@ -86,7 +88,8 @@ server.on("connection", (socket) => {
       }
       if (message.fire) {
         const now = Date.now();
-        if (now - (lastShot.get(playerId) ?? 0) >= 250) {
+        const weapon = weaponConfig[player.weapon ?? "rifle"];
+        if (now - (lastShot.get(playerId) ?? 0) >= weapon.cooldown) {
           lastShot.set(playerId, now);
           let target: PlayerState | undefined;
           let bestDistance = 12;
@@ -96,8 +99,8 @@ server.on("connection", (socket) => {
             if (distance < bestDistance) { bestDistance = distance; target = candidate; }
           }
           if (target) {
-            target.health = Math.max(0, target.health - 25);
-            broadcast(roomId, { type: "combat", attackerId: playerId, targetId: target.id, damage: 25 });
+            target.health = Math.max(0, target.health - weapon.damage);
+            broadcast(roomId, { type: "combat", attackerId: playerId, targetId: target.id, damage: weapon.damage });
           }
         }
       }
