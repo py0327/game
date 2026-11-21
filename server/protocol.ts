@@ -10,6 +10,7 @@ export type ServerMessage =
 
 export type PlayerState = {
   id: string;
+  kind?: "player" | "enemy";
   name: string;
   x: number;
   y: number;

@@ -46,6 +46,10 @@ server.on("connection", (socket) => {
       roomId = message.roomId.trim().slice(0, 48) || "default";
       const room = rooms.get(roomId) ?? new Map<string, PlayerState>();
       if (!roomObjectives.has(roomId)) roomObjectives.set(roomId, { nodes: [{ x: 5, z: -5, done: false }, { x: -7, z: -12, done: false }, { x: 10, z: -18, done: false }], phase: "recover", extractStarted: 0 });
+      if (room.size === 0) {
+        room.set(`${roomId}-crawler-1`, { id: `${roomId}-crawler-1`, kind: "enemy", name: "维护爬行机", x: 8, y: 1.2, z: -10, yaw: 0, pitch: 0, health: 100 });
+        room.set(`${roomId}-crawler-2`, { id: `${roomId}-crawler-2`, kind: "enemy", name: "维护爬行机", x: -8, y: 1.2, z: -14, yaw: 0, pitch: 0, health: 100 });
+      }
       room.set(playerId, { id: playerId, name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100 });
       rooms.set(roomId, room);
       sockets.set(playerId, socket);
@@ -105,6 +109,14 @@ setInterval(() => {
   tick += 1;
   for (const [roomId, room] of rooms) {
     const objective = roomObjectives.get(roomId) ?? { nodes: [], phase: "recover" as const, extractStarted: 0 };
+    const players = [...room.values()].filter((player) => player.kind !== "enemy" && player.health > 0);
+    for (const enemy of [...room.values()].filter((player) => player.kind === "enemy" && player.health > 0)) {
+      const target = players[0];
+      if (!target) continue;
+      const dx = target.x - enemy.x; const dz = target.z - enemy.z; const distance = Math.hypot(dx, dz);
+      if (distance > 1.8) { enemy.x += (dx / Math.max(distance, 1)) * 0.035; enemy.z += (dz / Math.max(distance, 1)) * 0.035; }
+      if (distance < 2.2 && tick % 20 === 0) target.health = Math.max(0, target.health - 10);
+    }
     if (objective.phase === "extract" && Date.now() - objective.extractStarted > 15000) objective.phase = "complete";
     broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 15 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0 } });
   }

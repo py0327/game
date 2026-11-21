@@ -50,7 +50,7 @@ function renderSnapshot(players) {
   for (const player of players) {
     if (player.id === playerId) continue;
     let mesh = remoteMeshes.get(player.id);
-    if (!mesh) { mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 1.1, 4, 8), new THREE.MeshStandardMaterial({ color: 0xd65a48 })); scene.add(mesh); remoteMeshes.set(player.id, mesh); }
+    if (!mesh) { mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 1.1, 4, 8), new THREE.MeshStandardMaterial({ color: player.kind === 'enemy' ? 0xe2a52b : 0xd65a48 })); scene.add(mesh); remoteMeshes.set(player.id, mesh); }
     mesh.position.lerp(new THREE.Vector3(player.x, player.y - 0.8, player.z), 0.35);
   }
   for (const [id, mesh] of remoteMeshes) if (!players.some((player) => player.id === id)) { scene.remove(mesh); remoteMeshes.delete(id); }
