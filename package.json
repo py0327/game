@@ -4,16 +4,22 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx server/index.ts",
+    "dev:client": "vite --host 0.0.0.0",
+    "build": "vite build",
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "concurrently": "^9.1.2",
+    "three": "^0.180.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/ws": "^8.5.13",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
   }
 }
