@@ -8,3 +8,4 @@ canvas { display: block; }
 #room-panel { position: fixed; z-index: 3; right: 18px; top: 18px; display: flex; gap: 6px; }
 #room-panel input, #room-panel button { border: 1px solid rgba(255,179,71,.45); background: rgba(8,12,16,.88); color: #e8e4da; padding: 8px 10px; font: 12px system-ui,sans-serif; }
 #room-panel button { cursor: pointer; color: #ffb347; }
+#room-panel { flex-wrap: wrap; max-width: 430px; justify-content: flex-end; }

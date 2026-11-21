@@ -24,7 +24,7 @@ for (let i = 0; i < 20; i += 1) {
 }
 
 const remoteMeshes = new Map(); const keys = new Set();
-let yaw = 0; let pitch = 0; let socket; let playerId = ''; let roomId = localStorage.getItem('fracture.room') || 'default';
+let yaw = 0; let pitch = 0; let socket; let playerId = ''; let roomId = localStorage.getItem('fracture.room') || 'default'; let playerName = localStorage.getItem('fracture.name') || `回收员-${Math.floor(Math.random() * 9999)}`;
 const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health'); const creditsLabel = document.querySelector('#credits'); const weaponLabel = document.querySelector('#weapon'); const objectiveLabel = document.querySelector('#objective');
 let aimMode = localStorage.getItem('fracture.aimMode') || 'hold'; let aiming = false;
 let weapon = localStorage.getItem('fracture.weapon') || 'rifle';
@@ -43,7 +43,7 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 function connect() {
   const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:3100`;
   socket = new WebSocket(url);
-  socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'list_rooms' })); socket.send(JSON.stringify({ type: 'join_room', roomId, playerName: `Player-${Math.floor(Math.random() * 9999)}` })); });
+  socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'list_rooms' })); socket.send(JSON.stringify({ type: 'join_room', roomId, playerName })); });
   socket.addEventListener('close', () => { status.textContent = '连接断开，正在重试…'; setTimeout(connect, 1500); });
   socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'room_list') status.textContent = `大厅 ${message.rooms.length} 个房间`; if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') { renderSnapshot(message.players); if (objectiveLabel) objectiveLabel.textContent = message.objective.phase === 'recover' ? `目标：激活数据节点 ${message.objective.completed}/${message.objective.total}（靠近后按 E）` : message.objective.phase === 'extract' ? `目标：前往撤离点（${message.objective.remaining}s）` : '任务完成：奖励已发放'; } if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
 }
@@ -71,3 +71,5 @@ function tick() {
 connect(); tick();
 
 const roomInput=document.querySelector('#room-input'); const joinButton=document.querySelector('#room-join'); const createButton=document.querySelector('#room-create'); if(roomInput){roomInput.value=roomId; joinButton.onclick=()=>{localStorage.setItem('fracture.room',roomInput.value.trim()||'default'); location.reload()}; createButton.onclick=()=>{roomInput.value='room-'+Math.floor(Math.random()*9000+1000); localStorage.setItem('fracture.room',roomInput.value); location.reload()};}
+
+const nameInput=document.querySelector('#name-input'); const saveName=document.querySelector('#save-name'); if(nameInput){nameInput.value=playerName; saveName.onclick=()=>{playerName=nameInput.value.trim()||'回收员'; localStorage.setItem('fracture.name',playerName); location.reload()};}
