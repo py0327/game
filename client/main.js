@@ -43,9 +43,9 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 function connect() {
   const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:3100`;
   socket = new WebSocket(url);
-  socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'join_room', roomId: 'default', playerName: `Player-${Math.floor(Math.random() * 9999)}` })); });
+  socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'list_rooms' })); socket.send(JSON.stringify({ type: 'join_room', roomId: 'default', playerName: `Player-${Math.floor(Math.random() * 9999)}` })); });
   socket.addEventListener('close', () => { status.textContent = '连接断开，正在重试…'; setTimeout(connect, 1500); });
-  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') { renderSnapshot(message.players); if (objectiveLabel) objectiveLabel.textContent = message.objective.phase === 'recover' ? `目标：激活数据节点 ${message.objective.completed}/${message.objective.total}（靠近后按 E）` : message.objective.phase === 'extract' ? `目标：前往撤离点（${message.objective.remaining}s）` : '任务完成：等待结算'; } if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
+  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'room_list') status.textContent = `大厅 ${message.rooms.length} 个房间`; if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') { renderSnapshot(message.players); if (objectiveLabel) objectiveLabel.textContent = message.objective.phase === 'recover' ? `目标：激活数据节点 ${message.objective.completed}/${message.objective.total}（靠近后按 E）` : message.objective.phase === 'extract' ? `目标：前往撤离点（${message.objective.remaining}s）` : '任务完成：奖励已发放'; } if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
 }
 
 function renderSnapshot(players) {

@@ -1,8 +1,10 @@
 export type ClientMessage =
+  | { type: "list_rooms" }
   | { type: "join_room"; roomId: string; playerName: string }
   | { type: "input"; sequence: number; moveX: number; moveZ: number; yaw: number; pitch: number; fire: boolean; ads?: boolean; weapon?: string; interact?: boolean };
 
 export type ServerMessage =
+  | { type: "room_list"; rooms: { id: string; players: number; capacity: number }[] }
   | { type: "welcome"; playerId: string; roomId: string; tickRate: number }
   | { type: "snapshot"; tick: number; players: PlayerState[]; objective: { completed: number; total: number; phase: "recover" | "extract" | "complete"; remaining: number; reward: number } }
   | { type: "combat"; attackerId: string; targetId: string; damage: number }

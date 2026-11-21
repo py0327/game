@@ -29,6 +29,8 @@ function broadcast(roomId: string, message: ServerMessage) {
   }
 }
 
+function roomList() { return [...rooms.entries()].map(([id, room]) => ({ id, players: [...room.values()].filter((player) => player.kind !== "enemy").length, capacity: 8 })); }
+
 function parseMessage(value: string): ClientMessage | undefined {
   try {
     const message = JSON.parse(value) as ClientMessage;
@@ -47,6 +49,8 @@ server.on("connection", (socket) => {
   socket.on("message", (raw) => {
     const message = parseMessage(raw.toString());
     if (!message) return send(socket, { type: "error", message: "Invalid message" });
+
+    if (message.type === "list_rooms") return send(socket, { type: "room_list", rooms: roomList() });
 
     if (message.type === "join_room") {
       const name = message.playerName.trim().slice(0, 24) || "Player";
