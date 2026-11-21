@@ -15,6 +15,8 @@ const sun = new THREE.DirectionalLight(0xffffff, 2.5);
 sun.position.set(8, 16, 5); scene.add(sun);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x24323a, roughness: 0.9 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const extraction = new THREE.Mesh(new THREE.RingGeometry(3, 3.3, 32), new THREE.MeshBasicMaterial({ color: 0x43d6b4, side: THREE.DoubleSide }));
+extraction.rotation.x = -Math.PI / 2; extraction.position.set(0, 0.02, -25); scene.add(extraction);
 for (let i = 0; i < 20; i += 1) {
   const height = 1 + (i % 2);
   const box = new THREE.Mesh(new THREE.BoxGeometry(2 + (i % 3), height, 2), new THREE.MeshStandardMaterial({ color: 0x40515a }));
@@ -46,7 +48,7 @@ function connect() {
 
 function renderSnapshot(players) {
   playersLabel.textContent = `队伍 ${players.length}`;
-  const local = players.find((player) => player.id === playerId); if (local) healthLabel.textContent = `护甲 ${local.health}`;
+  const local = players.find((player) => player.id === playerId); if (local) healthLabel.textContent = local.downed ? '倒地：靠近队友按 E' : `护甲 ${local.health}`;
   for (const player of players) {
     if (player.id === playerId) continue;
     let mesh = remoteMeshes.get(player.id);

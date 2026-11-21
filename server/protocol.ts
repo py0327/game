@@ -18,4 +18,5 @@ export type PlayerState = {
   yaw: number;
   pitch: number;
   health: number;
+  downed?: boolean;
 };

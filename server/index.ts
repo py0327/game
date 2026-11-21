@@ -71,7 +71,10 @@ server.on("connection", (socket) => {
       const objective = roomObjectives.get(roomId);
       if (message.interact && objective?.phase === "recover") {
         const node = objective.nodes.find((candidate) => !candidate.done && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
-        if (node) node.done = true;
+          if (node) node.done = true;
+          const downed = [...room.values()].find((candidate) => candidate.kind !== "enemy" && candidate.downed && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
+          if (downed) { downed.health = 50; downed.downed = false; }
+          if ((objective.phase as string) === "extract" && Math.hypot(player.x, player.z + 25) < 4) objective.phase = "complete";
         if (objective.nodes.every((candidate) => candidate.done)) { objective.phase = "extract"; objective.extractStarted = Date.now(); }
       }
       if (message.fire) {
@@ -109,7 +112,8 @@ setInterval(() => {
   tick += 1;
   for (const [roomId, room] of rooms) {
     const objective = roomObjectives.get(roomId) ?? { nodes: [], phase: "recover" as const, extractStarted: 0 };
-    const players = [...room.values()].filter((player) => player.kind !== "enemy" && player.health > 0);
+    const players = [...room.values()].filter((player) => player.kind !== "enemy" && player.health > 0 && !player.downed);
+    for (const player of room.values()) if (player.kind !== "enemy" && player.health <= 0) player.downed = true;
     for (const enemy of [...room.values()].filter((player) => player.kind === "enemy" && player.health > 0)) {
       const target = players[0];
       if (!target) continue;
@@ -117,7 +121,7 @@ setInterval(() => {
       if (distance > 1.8) { enemy.x += (dx / Math.max(distance, 1)) * 0.035; enemy.z += (dz / Math.max(distance, 1)) * 0.035; }
       if (distance < 2.2 && tick % 20 === 0) target.health = Math.max(0, target.health - 10);
     }
-    if (objective.phase === "extract" && Date.now() - objective.extractStarted > 15000) objective.phase = "complete";
+    if (objective.phase === "extract" && Date.now() - objective.extractStarted > 30000) objective.phase = "complete";
     broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 15 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0 } });
   }
 }, 1000 / tickRate);
