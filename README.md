@@ -2,6 +2,10 @@
 
 这是多人联机 FPS 的第一版网络基础层，目标是把 Saltline 的浏览器客户端接入桌面客户端和本地游戏服务。
 
+根目录的 `index.html` 已接入公开的 Saltline 单文件客户端，并在页面底部增加在线房间连接层。`prototype.html` 保留了此前的轻量 Three.js 联机原型。
+
+Saltline 来源仓库为 https://github.com/Lyken17/claude-fps-game-demo 。原始页面文件保留其原有内容，本项目新增的联机桥接代码位于文件末尾。
+
 ## 当前内容
 
 - Node.js + TypeScript WebSocket 游戏服务
