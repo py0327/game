@@ -9,3 +9,8 @@ canvas { display: block; }
 #room-panel input, #room-panel button { border: 1px solid rgba(255,179,71,.45); background: rgba(8,12,16,.88); color: #e8e4da; padding: 8px 10px; font: 12px system-ui,sans-serif; }
 #room-panel button { cursor: pointer; color: #ffb347; }
 #room-panel { flex-wrap: wrap; max-width: 430px; justify-content: flex-end; }
+#hud { right: 460px; max-width: calc(100vw - 500px); flex-wrap: wrap; row-gap: 8px; line-height: 1.3; }
+#hud small { flex-basis: 100%; margin-left: 0; opacity: .65; }
+#room-panel { top: 18px; right: 18px; width: 420px; }
+#room-panel input { min-width: 150px; }
+@media (max-width: 900px) { #hud { right: 18px; max-width: calc(100vw - 36px); top: 90px; } #room-panel { width: auto; left: 18px; right: 18px; } }
