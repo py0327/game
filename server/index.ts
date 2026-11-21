@@ -65,6 +65,7 @@ server.on("connection", (socket) => {
       const name = message.playerName.trim().slice(0, 24) || "Player";
       roomId = message.roomId.trim().slice(0, 48) || "default";
       const room = rooms.get(roomId) ?? new Map<string, PlayerState>();
+      if ([...room.values()].filter((player) => player.kind !== "enemy").length >= 8) return send(socket, { type: "error", message: "Room is full" });
       if (!roomObjectives.has(roomId)) roomObjectives.set(roomId, { nodes: [{ x: 5, z: -5, done: false }, { x: -7, z: -12, done: false }, { x: 10, z: -18, done: false }], phase: "recover", extractStarted: 0 });
       if (room.size === 0) {
         room.set(`${roomId}-crawler-1`, { id: `${roomId}-crawler-1`, kind: "enemy", name: "维护爬行机", x: 8, y: 1.2, z: -10, yaw: 0, pitch: 0, health: 100 });
@@ -83,10 +84,12 @@ server.on("connection", (socket) => {
       if (!room) return;
       const player = room.get(playerId);
       if (!player) return;
-      const length = Math.hypot(message.moveX, message.moveZ) || 1;
+      const moveX = Math.max(-1, Math.min(1, Number(message.moveX) || 0));
+      const moveZ = Math.max(-1, Math.min(1, Number(message.moveZ) || 0));
+      const length = Math.hypot(moveX, moveZ) || 1;
       const speed = 0.12;
-      player.x += (message.moveX / length) * speed;
-      player.z += (message.moveZ / length) * speed;
+      player.x += (moveX / length) * speed;
+      player.z += (moveZ / length) * speed;
       player.yaw = Number.isFinite(message.yaw) ? message.yaw : player.yaw;
       player.pitch = Number.isFinite(message.pitch) ? message.pitch : player.pitch;
       if (message.weapon === "rifle" || message.weapon === "scatter" || message.weapon === "repair") player.weapon = message.weapon;
