@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { ClientMessage, PlayerState, ServerMessage } from "./protocol.js";
 
@@ -8,6 +9,11 @@ const rooms = new Map<string, Map<string, PlayerState>>();
 const sockets = new Map<string, WebSocket>();
 const lastShot = new Map<string, number>();
 const roomObjectives = new Map<string, { nodes: { x: number; z: number; done: boolean }[]; phase: "recover" | "extract" | "complete"; extractStarted: number }>();
+const accountFile = process.env.GAME_ACCOUNT_FILE ?? "data/accounts.json";
+mkdirSync(accountFile.split("/").slice(0, -1).join("/") || ".", { recursive: true });
+let accounts: Record<string, { credits: number }> = {};
+try { accounts = JSON.parse(readFileSync(accountFile, "utf8")); } catch { accounts = {}; }
+function saveAccounts() { writeFileSync(accountFile, JSON.stringify(accounts, null, 2)); }
 
 function send(socket: WebSocket, message: ServerMessage) {
   if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
@@ -50,7 +56,8 @@ server.on("connection", (socket) => {
         room.set(`${roomId}-crawler-1`, { id: `${roomId}-crawler-1`, kind: "enemy", name: "维护爬行机", x: 8, y: 1.2, z: -10, yaw: 0, pitch: 0, health: 100 });
         room.set(`${roomId}-crawler-2`, { id: `${roomId}-crawler-2`, kind: "enemy", name: "维护爬行机", x: -8, y: 1.2, z: -14, yaw: 0, pitch: 0, health: 100 });
       }
-      room.set(playerId, { id: playerId, kind: "player", name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100, credits: 0 });
+      const account = accounts[name] ?? (accounts[name] = { credits: 0 });
+      room.set(playerId, { id: playerId, kind: "player", name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100, credits: account.credits });
       rooms.set(roomId, room);
       sockets.set(playerId, socket);
       send(socket, { type: "welcome", playerId, roomId, tickRate });
@@ -122,7 +129,7 @@ setInterval(() => {
       if (distance < 2.2 && tick % 20 === 0) target.health = Math.max(0, target.health - 10);
     }
     if (objective.phase === "extract" && Date.now() - objective.extractStarted > 30000) objective.phase = "complete";
-    if (objective.phase === "complete") for (const player of players) if ((player.credits ?? 0) < 100) player.credits = (player.credits ?? 0) + 100;
+    if (objective.phase === "complete") for (const player of players) if ((player.credits ?? 0) < 100) { player.credits = (player.credits ?? 0) + 100; accounts[player.name] = { credits: player.credits }; saveAccounts(); }
     broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 30 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0, reward: objective.phase === "complete" ? 100 : 0 } });
   }
 }, 1000 / tickRate);
