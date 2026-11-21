@@ -24,11 +24,16 @@ for (let i = 0; i < 20; i += 1) {
 const remoteMeshes = new Map(); const keys = new Set();
 let yaw = 0; let pitch = 0; let socket; let playerId = '';
 const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health'); const objectiveLabel = document.querySelector('#objective');
+let aimMode = localStorage.getItem('fracture.aimMode') || 'hold'; let aiming = false;
 addEventListener('keydown', (event) => keys.add(event.code));
 addEventListener('keyup', (event) => keys.delete(event.code));
 document.body.addEventListener('click', () => document.body.requestPointerLock());
 addEventListener('mousemove', (event) => { if (document.pointerLockElement !== document.body) return; yaw -= event.movementX * 0.0022; pitch = Math.max(-1.45, Math.min(1.45, pitch - event.movementY * 0.0022)); });
 let firing = false; addEventListener('mousedown', () => { firing = true; }); addEventListener('mouseup', () => { firing = false; });
+addEventListener('contextmenu', (event) => event.preventDefault());
+addEventListener('mousedown', (event) => { if (event.button === 2) aiming = aimMode === 'toggle' ? !aiming : true; });
+addEventListener('mouseup', (event) => { if (event.button === 2 && aimMode === 'hold') aiming = false; });
+addEventListener('keydown', (event) => { if (event.code === 'KeyV') { aimMode = aimMode === 'hold' ? 'toggle' : 'hold'; localStorage.setItem('fracture.aimMode', aimMode); status.textContent = aimMode === 'hold' ? '按住右键开镜' : '点击右键切换开镜'; } });
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 function connect() {
@@ -55,8 +60,8 @@ let sequence = 0;
 function tick() {
   const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS')); const strafe = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
   const direction = new THREE.Vector3(strafe, 0, -forward).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-  camera.position.addScaledVector(direction, 0.12); camera.rotation.set(pitch, yaw, 0, 'YXZ');
-  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: firing, interact: keys.has('KeyE') }));
+  camera.position.addScaledVector(direction, aiming ? 0.07 : 0.12); camera.fov += ((aiming ? 52 : 72) - camera.fov) * 0.2; camera.updateProjectionMatrix(); camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: firing, ads: aiming, interact: keys.has('KeyE') }));
   renderer.render(scene, camera); requestAnimationFrame(tick);
 }
 connect(); tick();

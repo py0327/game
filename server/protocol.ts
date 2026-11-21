@@ -1,6 +1,6 @@
 export type ClientMessage =
   | { type: "join_room"; roomId: string; playerName: string }
-  | { type: "input"; sequence: number; moveX: number; moveZ: number; yaw: number; pitch: number; fire: boolean; interact?: boolean };
+  | { type: "input"; sequence: number; moveX: number; moveZ: number; yaw: number; pitch: number; fire: boolean; ads?: boolean; interact?: boolean };
 
 export type ServerMessage =
   | { type: "welcome"; playerId: string; roomId: string; tickRate: number }
