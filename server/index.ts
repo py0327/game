@@ -7,6 +7,7 @@ const tickRate = 20;
 const rooms = new Map<string, Map<string, PlayerState>>();
 const sockets = new Map<string, WebSocket>();
 const lastShot = new Map<string, number>();
+const roomObjectives = new Map<string, { nodes: { x: number; z: number; done: boolean }[]; phase: "recover" | "extract" | "complete"; extractStarted: number }>();
 
 function send(socket: WebSocket, message: ServerMessage) {
   if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
@@ -44,6 +45,7 @@ server.on("connection", (socket) => {
       const name = message.playerName.trim().slice(0, 24) || "Player";
       roomId = message.roomId.trim().slice(0, 48) || "default";
       const room = rooms.get(roomId) ?? new Map<string, PlayerState>();
+      if (!roomObjectives.has(roomId)) roomObjectives.set(roomId, { nodes: [{ x: 5, z: -5, done: false }, { x: -7, z: -12, done: false }, { x: 10, z: -18, done: false }], phase: "recover", extractStarted: 0 });
       room.set(playerId, { id: playerId, name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100 });
       rooms.set(roomId, room);
       sockets.set(playerId, socket);
@@ -62,6 +64,12 @@ server.on("connection", (socket) => {
       player.z += (message.moveZ / length) * speed;
       player.yaw = Number.isFinite(message.yaw) ? message.yaw : player.yaw;
       player.pitch = Number.isFinite(message.pitch) ? message.pitch : player.pitch;
+      const objective = roomObjectives.get(roomId);
+      if (message.interact && objective?.phase === "recover") {
+        const node = objective.nodes.find((candidate) => !candidate.done && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
+        if (node) node.done = true;
+        if (objective.nodes.every((candidate) => candidate.done)) { objective.phase = "extract"; objective.extractStarted = Date.now(); }
+      }
       if (message.fire) {
         const now = Date.now();
         if (now - (lastShot.get(playerId) ?? 0) >= 250) {
@@ -88,7 +96,7 @@ server.on("connection", (socket) => {
     room?.delete(playerId);
     sockets.delete(playerId);
     lastShot.delete(playerId);
-    if (room && room.size === 0) rooms.delete(roomId);
+    if (room && room.size === 0) { rooms.delete(roomId); roomObjectives.delete(roomId); }
   });
 });
 
@@ -96,7 +104,9 @@ let tick = 0;
 setInterval(() => {
   tick += 1;
   for (const [roomId, room] of rooms) {
-    broadcast(roomId, { type: "snapshot", tick, players: [...room.values()] });
+    const objective = roomObjectives.get(roomId) ?? { nodes: [], phase: "recover" as const, extractStarted: 0 };
+    if (objective.phase === "extract" && Date.now() - objective.extractStarted > 15000) objective.phase = "complete";
+    broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 15 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0 } });
   }
 }, 1000 / tickRate);
 

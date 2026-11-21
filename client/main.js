@@ -23,7 +23,7 @@ for (let i = 0; i < 20; i += 1) {
 
 const remoteMeshes = new Map(); const keys = new Set();
 let yaw = 0; let pitch = 0; let socket; let playerId = '';
-const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health');
+const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health'); const objectiveLabel = document.querySelector('#objective');
 addEventListener('keydown', (event) => keys.add(event.code));
 addEventListener('keyup', (event) => keys.delete(event.code));
 document.body.addEventListener('click', () => document.body.requestPointerLock());
@@ -36,7 +36,7 @@ function connect() {
   socket = new WebSocket(url);
   socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'join_room', roomId: 'default', playerName: `Player-${Math.floor(Math.random() * 9999)}` })); });
   socket.addEventListener('close', () => { status.textContent = '连接断开，正在重试…'; setTimeout(connect, 1500); });
-  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') renderSnapshot(message.players); if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
+  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') { renderSnapshot(message.players); if (objectiveLabel) objectiveLabel.textContent = message.objective.phase === 'recover' ? `目标：激活数据节点 ${message.objective.completed}/${message.objective.total}（靠近后按 E）` : message.objective.phase === 'extract' ? `目标：前往撤离点（${message.objective.remaining}s）` : '任务完成：等待结算'; } if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
 }
 
 function renderSnapshot(players) {
@@ -56,7 +56,7 @@ function tick() {
   const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS')); const strafe = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
   const direction = new THREE.Vector3(strafe, 0, -forward).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   camera.position.addScaledVector(direction, 0.12); camera.rotation.set(pitch, yaw, 0, 'YXZ');
-  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: firing }));
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: firing, interact: keys.has('KeyE') }));
   renderer.render(scene, camera); requestAnimationFrame(tick);
 }
 connect(); tick();
