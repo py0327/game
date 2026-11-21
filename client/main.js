@@ -25,7 +25,7 @@ for (let i = 0; i < 20; i += 1) {
 
 const remoteMeshes = new Map(); const keys = new Set();
 let yaw = 0; let pitch = 0; let socket; let playerId = '';
-const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health'); const objectiveLabel = document.querySelector('#objective');
+const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health'); const creditsLabel = document.querySelector('#credits'); const objectiveLabel = document.querySelector('#objective');
 let aimMode = localStorage.getItem('fracture.aimMode') || 'hold'; let aiming = false;
 addEventListener('keydown', (event) => keys.add(event.code));
 addEventListener('keyup', (event) => keys.delete(event.code));
@@ -48,7 +48,7 @@ function connect() {
 
 function renderSnapshot(players) {
   playersLabel.textContent = `队伍 ${players.length}`;
-  const local = players.find((player) => player.id === playerId); if (local) healthLabel.textContent = local.downed ? '倒地：靠近队友按 E' : `护甲 ${local.health}`;
+  const local = players.find((player) => player.id === playerId); if (local) { healthLabel.textContent = local.downed ? '倒地：靠近队友按 E' : `护甲 ${local.health}`; if (creditsLabel) creditsLabel.textContent = `积分 ${local.credits ?? 0}`; }
   for (const player of players) {
     if (player.id === playerId) continue;
     let mesh = remoteMeshes.get(player.id);

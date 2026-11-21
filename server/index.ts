@@ -50,7 +50,7 @@ server.on("connection", (socket) => {
         room.set(`${roomId}-crawler-1`, { id: `${roomId}-crawler-1`, kind: "enemy", name: "维护爬行机", x: 8, y: 1.2, z: -10, yaw: 0, pitch: 0, health: 100 });
         room.set(`${roomId}-crawler-2`, { id: `${roomId}-crawler-2`, kind: "enemy", name: "维护爬行机", x: -8, y: 1.2, z: -14, yaw: 0, pitch: 0, health: 100 });
       }
-      room.set(playerId, { id: playerId, name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100 });
+      room.set(playerId, { id: playerId, kind: "player", name, x: 0, y: 1.7, z: 0, yaw: 0, pitch: 0, health: 100, credits: 0 });
       rooms.set(roomId, room);
       sockets.set(playerId, socket);
       send(socket, { type: "welcome", playerId, roomId, tickRate });
@@ -122,7 +122,8 @@ setInterval(() => {
       if (distance < 2.2 && tick % 20 === 0) target.health = Math.max(0, target.health - 10);
     }
     if (objective.phase === "extract" && Date.now() - objective.extractStarted > 30000) objective.phase = "complete";
-    broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 15 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0 } });
+    if (objective.phase === "complete") for (const player of players) if ((player.credits ?? 0) < 100) player.credits = (player.credits ?? 0) + 100;
+    broadcast(roomId, { type: "snapshot", tick, players: [...room.values()], objective: { completed: objective.nodes.filter((node) => node.done).length, total: objective.nodes.length, phase: objective.phase, remaining: objective.phase === "extract" ? Math.max(0, 30 - Math.floor((Date.now() - objective.extractStarted) / 1000)) : 0, reward: objective.phase === "complete" ? 100 : 0 } });
   }
 }, 1000 / tickRate);
 

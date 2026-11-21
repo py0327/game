@@ -4,7 +4,7 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: "welcome"; playerId: string; roomId: string; tickRate: number }
-  | { type: "snapshot"; tick: number; players: PlayerState[]; objective: { completed: number; total: number; phase: "recover" | "extract" | "complete"; remaining: number } }
+  | { type: "snapshot"; tick: number; players: PlayerState[]; objective: { completed: number; total: number; phase: "recover" | "extract" | "complete"; remaining: number; reward: number } }
   | { type: "combat"; attackerId: string; targetId: string; damage: number }
   | { type: "error"; message: string };
 
@@ -19,4 +19,5 @@ export type PlayerState = {
   pitch: number;
   health: number;
   downed?: boolean;
+  credits?: number;
 };
