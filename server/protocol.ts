@@ -1,0 +1,19 @@
+export type ClientMessage =
+  | { type: "join_room"; roomId: string; playerName: string }
+  | { type: "input"; sequence: number; moveX: number; moveZ: number; yaw: number; pitch: number; fire: boolean };
+
+export type ServerMessage =
+  | { type: "welcome"; playerId: string; roomId: string; tickRate: number }
+  | { type: "snapshot"; tick: number; players: PlayerState[] }
+  | { type: "error"; message: string };
+
+export type PlayerState = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  pitch: number;
+  health: number;
+};
