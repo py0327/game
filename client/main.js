@@ -23,11 +23,12 @@ for (let i = 0; i < 20; i += 1) {
 
 const remoteMeshes = new Map(); const keys = new Set();
 let yaw = 0; let pitch = 0; let socket; let playerId = '';
-const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const roomLabel = document.querySelector('#room');
+const status = document.querySelector('#status'); const playersLabel = document.querySelector('#players'); const healthLabel = document.querySelector('#health');
 addEventListener('keydown', (event) => keys.add(event.code));
 addEventListener('keyup', (event) => keys.delete(event.code));
 document.body.addEventListener('click', () => document.body.requestPointerLock());
 addEventListener('mousemove', (event) => { if (document.pointerLockElement !== document.body) return; yaw -= event.movementX * 0.0022; pitch = Math.max(-1.45, Math.min(1.45, pitch - event.movementY * 0.0022)); });
+let firing = false; addEventListener('mousedown', () => { firing = true; }); addEventListener('mouseup', () => { firing = false; });
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 function connect() {
@@ -35,11 +36,12 @@ function connect() {
   socket = new WebSocket(url);
   socket.addEventListener('open', () => { status.textContent = '已连接'; socket.send(JSON.stringify({ type: 'join_room', roomId: 'default', playerName: `Player-${Math.floor(Math.random() * 9999)}` })); });
   socket.addEventListener('close', () => { status.textContent = '连接断开，正在重试…'; setTimeout(connect, 1500); });
-  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'welcome') { playerId = message.playerId; roomLabel.textContent = `房间 ${message.roomId}`; } if (message.type === 'snapshot') renderSnapshot(message.players); });
+  socket.addEventListener('message', ({ data }) => { const message = JSON.parse(data); if (message.type === 'welcome') playerId = message.playerId; if (message.type === 'snapshot') renderSnapshot(message.players); if (message.type === 'combat') status.textContent = message.targetId === playerId ? '受到攻击' : '交火中'; });
 }
 
 function renderSnapshot(players) {
-  playersLabel.textContent = `玩家 ${players.length}`;
+  playersLabel.textContent = `队伍 ${players.length}`;
+  const local = players.find((player) => player.id === playerId); if (local) healthLabel.textContent = `护甲 ${local.health}`;
   for (const player of players) {
     if (player.id === playerId) continue;
     let mesh = remoteMeshes.get(player.id);
@@ -54,7 +56,7 @@ function tick() {
   const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS')); const strafe = Number(keys.has('KeyD')) - Number(keys.has('KeyA'));
   const direction = new THREE.Vector3(strafe, 0, -forward).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   camera.position.addScaledVector(direction, 0.12); camera.rotation.set(pitch, yaw, 0, 'YXZ');
-  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: false }));
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'input', sequence: sequence++, moveX: strafe, moveZ: forward, yaw, pitch, fire: firing }));
   renderer.render(scene, camera); requestAnimationFrame(tick);
 }
 connect(); tick();

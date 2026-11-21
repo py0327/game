@@ -5,6 +5,7 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: "welcome"; playerId: string; roomId: string; tickRate: number }
   | { type: "snapshot"; tick: number; players: PlayerState[] }
+  | { type: "combat"; attackerId: string; targetId: string; damage: number }
   | { type: "error"; message: string };
 
 export type PlayerState = {

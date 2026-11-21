@@ -6,6 +6,7 @@ const port = Number(process.env.GAME_PORT ?? 3100);
 const tickRate = 20;
 const rooms = new Map<string, Map<string, PlayerState>>();
 const sockets = new Map<string, WebSocket>();
+const lastShot = new Map<string, number>();
 
 function send(socket: WebSocket, message: ServerMessage) {
   if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
@@ -51,7 +52,9 @@ server.on("connection", (socket) => {
     }
 
     if (message.type === "input" && roomId) {
-      const player = rooms.get(roomId)?.get(playerId);
+      const room = rooms.get(roomId);
+      if (!room) return;
+      const player = room.get(playerId);
       if (!player) return;
       const length = Math.hypot(message.moveX, message.moveZ) || 1;
       const speed = 0.12;
@@ -59,6 +62,23 @@ server.on("connection", (socket) => {
       player.z += (message.moveZ / length) * speed;
       player.yaw = Number.isFinite(message.yaw) ? message.yaw : player.yaw;
       player.pitch = Number.isFinite(message.pitch) ? message.pitch : player.pitch;
+      if (message.fire) {
+        const now = Date.now();
+        if (now - (lastShot.get(playerId) ?? 0) >= 250) {
+          lastShot.set(playerId, now);
+          let target: PlayerState | undefined;
+          let bestDistance = 12;
+          for (const candidate of room.values()) {
+            if (candidate.id === playerId || candidate.health <= 0) continue;
+            const distance = Math.hypot(candidate.x - player.x, candidate.z - player.z);
+            if (distance < bestDistance) { bestDistance = distance; target = candidate; }
+          }
+          if (target) {
+            target.health = Math.max(0, target.health - 25);
+            broadcast(roomId, { type: "combat", attackerId: playerId, targetId: target.id, damage: 25 });
+          }
+        }
+      }
     }
   });
 
@@ -67,6 +87,7 @@ server.on("connection", (socket) => {
     const room = rooms.get(roomId);
     room?.delete(playerId);
     sockets.delete(playerId);
+    lastShot.delete(playerId);
     if (room && room.size === 0) rooms.delete(roomId);
   });
 });
