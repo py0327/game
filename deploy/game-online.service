@@ -1,0 +1,22 @@
+[Unit]
+Description=Fracture Recovery online game service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/fracture-recovery
+Environment=NODE_ENV=production
+Environment=GAME_PORT=3100
+Environment=GAME_ACCOUNT_FILE=/opt/fracture-recovery/data/accounts.json
+ExecStart=/usr/bin/npm run dev:server
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/fracture-recovery/data
+
+[Install]
+WantedBy=multi-user.target

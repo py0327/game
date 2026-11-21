@@ -84,12 +84,12 @@ server.on("connection", (socket) => {
       const objective = roomObjectives.get(roomId);
       if (message.interact && objective?.phase === "recover") {
         const node = objective.nodes.find((candidate) => !candidate.done && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
-          if (node) node.done = true;
-          const downed = [...room.values()].find((candidate) => candidate.kind !== "enemy" && candidate.downed && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
-          if (downed) { downed.health = 50; downed.downed = false; }
-          if ((objective.phase as string) === "extract" && Math.hypot(player.x, player.z + 25) < 4) objective.phase = "complete";
+        if (node) node.done = true;
+        const downed = [...room.values()].find((candidate) => candidate.kind !== "enemy" && candidate.downed && Math.hypot(candidate.x - player.x, candidate.z - player.z) < 3);
+        if (downed) { downed.health = 50; downed.downed = false; }
         if (objective.nodes.every((candidate) => candidate.done)) { objective.phase = "extract"; objective.extractStarted = Date.now(); }
       }
+      if (message.interact && objective?.phase === "extract" && Math.hypot(player.x, player.z + 25) < 4) objective.phase = "complete";
       if (message.fire) {
         const now = Date.now();
         const weapon = weaponConfig[player.weapon ?? "rifle"];
