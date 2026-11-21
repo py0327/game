@@ -6583,5 +6583,6 @@ ${saltlineI18n.t("errors")} ${window.__errors.length}${window.__errors.length?`
  }
  setInterval(()=>{if(ws?.readyState!==1)return;const f=+keys.has('KeyW')-+keys.has('KeyS'),s=+keys.has('KeyD')-+keys.has('KeyA');ws.send(JSON.stringify({type:'input',sequence:seq++,moveX:s,moveZ:f,yaw,pitch,fire:false}));},50);
  connect();
+ setInterval(()=>{if(window.__fatal){state.textContent='ERROR';state.title=window.__fatal;}else if(window.__errors&&window.__errors.length){state.textContent='GAME ERROR';state.title=window.__errors[0];}},1000);
 })();
 </script>
