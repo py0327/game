@@ -1,0 +1,24 @@
+services:
+  game:
+    build: .
+    restart: unless-stopped
+    environment:
+      GAME_PORT: 3100
+      GAME_ACCOUNT_FILE: /app/data/accounts.json
+    ports:
+      - "3100:3100"
+    volumes:
+      - game-data:/app/data
+  web:
+    image: python:3.12-slim
+    restart: unless-stopped
+    command: python -m http.server 3101 --bind 0.0.0.0 --directory /srv/dist
+    ports:
+      - "3101:3101"
+    volumes:
+      - ./dist:/srv/dist:ro
+    depends_on:
+      - game
+
+volumes:
+  game-data:
