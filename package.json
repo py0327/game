@@ -3,12 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "desktop/main.cjs",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx server/index.ts",
     "dev:client": "vite --host 0.0.0.0",
     "build": "vite build",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "desktop:dev": "electron .",
+    "desktop:package": "npm run build && electron-builder --dir"
   },
   "dependencies": {
     "concurrently": "^9.1.2",
@@ -20,6 +23,8 @@
     "@types/ws": "^8.5.13",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12"
   }
 }
